@@ -1,9 +1,13 @@
 import { sign } from "jsonwebtoken";
 
 export const createAccessToken = async (channel) => {
-  return sign({ channelId: channel.id }, process.env.ACCESS_TOKEN_SECRET, {
-    expiresIn: "10m",
-  });
+  return sign(
+    { channelId: channel.id, admin: false },
+    process.env.ACCESS_TOKEN_SECRET,
+    {
+      expiresIn: "10m",
+    }
+  );
 };
 
 export const createAdminAccessToken = async (admin) => {

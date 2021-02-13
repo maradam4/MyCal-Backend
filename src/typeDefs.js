@@ -11,7 +11,6 @@ export const typeDefs = gql`
     createChannel(password: String!): Channel
     loginToChannel(password: String!): LoginResponse!
     createPost(
-      channel: ID!
       status: String!
       lat: String!
       long: String!
@@ -19,25 +18,27 @@ export const typeDefs = gql`
     ): Post
   }
   type Admin {
-    id: ID!
-    username: String!
+    id: ID
+    username: String
+    errors: String
   }
   type Channel {
-    id: ID!
-    password: String!
+    id: ID
+    password: String
+    errors: String
   }
   type Post {
-    id: ID!
-    channel: ID!
-    status: String!
-    lat: String!
-    long: String!
-    poster: String!
-    dte: String!
+    id: ID
+    channel: ID
+    status: String
+    lat: String
+    long: String
+    poster: String
+    dte: String
+    errors: String
   }
   type AdminLoginResponse {
     accessToken: String
-    admin: Admin
     errors: String
   }
   type LoginResponse {

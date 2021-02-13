@@ -11,7 +11,11 @@ export const resolvers = {
     getPosts: async (_, {}, { req, res, payload }) => {
       const authorization = req.headers["authorization"];
       if (!authorization) {
-        throw new Error("NOT ALLOWED");
+        return [
+          {
+            errors: "INVALID TOKEN",
+          },
+        ];
       }
       try {
         const mypayload = verify(
@@ -22,55 +26,76 @@ export const resolvers = {
         console.log(mypayload);
         let posts = await Post.find({ channel: payload.channelId }).exec();
         return posts;
-      } catch (err) {
-        console.log(err);
-        throw new Error("INVALID TOKEN");
+      } catch {
+        return [
+          {
+            errors: "INVALID TOKEN",
+          },
+        ];
       }
     },
   },
   Mutation: {
     createAdmin: async (_, { username, password }) => {
-      const hashedpassword = await hash(password, 12);
-      const user = new Admin({ username, password: hashedpassword });
-      return user.save();
+      if (username && password) {
+        const hashedpassword = await hash(password, 12);
+        const user = new Admin({ username, password: hashedpassword });
+        try {
+          await user.save();
+          return user;
+        } catch {
+          return {
+            errors: "USER EXISTS",
+          };
+        }
+      } else {
+        return {
+          errors: "INVALID CREDENTIALS",
+        };
+      }
     },
     adminLogin: async (_, { username, password }, { req, res }) => {
       const admin = await Admin.findOne({ username });
       if (!admin) {
         return {
-          errors: "that admin doesn't exist",
+          errors: "NOT FOUND",
         };
       }
       const pssdvalidation = await compare(password, admin.password);
       if (!pssdvalidation) {
         return {
-          errors: "somethin went wrong",
+          errors: "INVALID CREDENTIALS",
         };
       }
       return {
         accessToken: createAdminAccessToken(admin),
-        admin: admin,
       };
     },
     createChannel: async (_, { password }, { req, res, payload }) => {
       //const hashedpassword = await hash(password, 12);
       const authorization = req.headers["authorization"];
       if (!authorization) {
-        throw new Error("NOT ALLOWED");
+        return {
+          errors: "INVALID TOKEN",
+        };
       }
-      try {
-        const mypayload = verify(authorization, process.env.ADMIN_TOKEN_SECRET);
-        payload = mypayload;
-        console.log(mypayload);
-        if (payload.admin) {
-          const channel = new Channel({ password: password });
-          return channel.save();
-        } else {
-          return "UNAUTHORIZED";
+      const mypayload = verify(authorization, process.env.ADMIN_TOKEN_SECRET);
+      payload = mypayload;
+      console.log(mypayload);
+      if (payload.admin) {
+        const channel = new Channel({ password: password });
+        try {
+          await channel.save();
+          return channel;
+        } catch {
+          return {
+            errors: "CHANNEL EXISTS",
+          };
         }
-      } catch (err) {
-        console.log(err);
-        return "failed to create channel";
+      } else {
+        return {
+          errors: "INVALID TOKEN",
+        };
       }
     },
     loginToChannel: async (_, { password }, { req, res }) => {
@@ -81,7 +106,7 @@ export const resolvers = {
         };
       } else {
         return {
-          errors: "that channel doesn't exist",
+          errors: "NOT FOUND",
         };
       }
     },
@@ -92,7 +117,9 @@ export const resolvers = {
     ) => {
       const authorization = req.headers["authorization"];
       if (!authorization) {
-        throw new Error("NOT ALLOWED");
+        return {
+          errors: "INVALID TOKEN",
+        };
       }
       try {
         const mypayload = verify(
@@ -108,10 +135,18 @@ export const resolvers = {
           long: long,
           poster: poster,
         });
-        return post.save();
-      } catch (err) {
-        console.log(err);
-        return "failed to create post";
+        try {
+          await post.save();
+          return post;
+        } catch {
+          return {
+            errors: "FAILED",
+          };
+        }
+      } catch {
+        return {
+          errors: "FAILED",
+        };
       }
     },
   },
